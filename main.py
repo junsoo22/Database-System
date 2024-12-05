@@ -188,21 +188,24 @@ def ManagePlaylist():
 
 def PlayMusic(id):
     global count
+ 
     while True:
-
-        sql='SELECT MID from music WHERE MID=%s'
+        print("count: ",count)
+        sql='SELECT MID,Mname from music WHERE MID=%s'
         a=input('Input music ID: ')
-        count+=1
         cursor.execute(sql,a)
         connection.commit()
         rows=cursor.fetchall()
-        
+
         if rows:
-            sql='INSERT INTO heard VALUES (%s,%s,%s,%s)'
-            cursor.execute(sql,(id,a,count,datetime.now()))
+            
+            #primary key가 중복일때(이미 들은 음악일 때), 들은 횟수와 들은 날짜 update해줌
+            sql='INSERT INTO heard VALUES (%s,%s,%s,%s) ON DUPLICATE KEY UPDATE heardNum=heardNum+1, heardDate=%s'
+            
+            cursor.execute(sql,(id,a,count,datetime.now(),datetime.now()))
             MID = cursor.fetchall()
             for MID in rows:
-                print(MID[0])
+                print("Playing ",MID[1])
             connection.commit()
             return
         else:
@@ -287,6 +290,5 @@ def main():
         else:
             print("Error: input correct menu")
 
-count=0    #음악 들은 횟수
-print(datetime.now())
+count=1    #음악 들은 횟수
 main()
