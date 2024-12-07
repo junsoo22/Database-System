@@ -60,6 +60,10 @@ def DeleteMusic():
     sql = 'DELETE FROM music WHERE MID=%s'
     cursor.execute(sql, a)
 
+    #favorite 테이블에서 삭제
+    sql = 'DELETE FROM favorite WHERE MID=%s'
+    cursor.execute(sql, a)
+
     connection.commit()
 
 
@@ -81,7 +85,7 @@ def Managemusic(id):
             sql="Select * from music"     #music table 출력
             cursor.execute(sql)
             result=cursor.fetchall()
-            headers=['admin ID', 'Music ID', 'Music name', 'Singer', 'Album ID']
+            headers=['admin ID', 'Music ID', 'Music name', 'Singer']
             print(tabulate(result,headers,tablefmt='grid'))
             connection.commit()
             
@@ -128,8 +132,8 @@ def DeleteUser(id):
     sql='DELETE FROM including WHERE UID=%s'
     cursor.execute(sql,a)
     
-    # #like table에서 삭제
-    sql='DELETE FROM heart WHERE UID=%s'
+    # favorite table에서 삭제
+    sql='DELETE FROM favorite WHERE UID=%s'
     cursor.execute(sql,a)
 
     #playlist table에서 삭제
@@ -193,7 +197,6 @@ def adminmenu():
             print("Error: input correct menu")
 
 def CreatePlaylist(id):
-  
 
     sql='INSERT INTO playlist (Pname, MgrID, PID) VALUES (%s, %s, %s)'
     a=input("Input playlist name: ")
@@ -275,7 +278,8 @@ def DeleteMusicToPlaylist(id):
     connection.commit()
 
 def ShowMusicInPlaylist(id):
-    sql='SELECT music.Mname from music,including WHERE including.UID=%s and including.PID=%s and music.MID=including.MID'
+    sql='''SELECT music.Mname from music,including 
+    WHERE including.UID=%s and including.PID=%s and music.MID=including.MID'''
     a=input('Input Playlist ID to show music: ')
     cursor.execute(sql,(id,a))
     result=cursor.fetchall()
@@ -327,7 +331,8 @@ def PlayMusic(id):
 
         if rows:
             #primary key가 중복일때(이미 들은 음악일 때), 들은 횟수와 들은 날짜 update해줌
-            sql='INSERT INTO heard VALUES (%s,%s,%s,%s) ON DUPLICATE KEY UPDATE heardNum=heardNum+1, heardDate=%s'
+            sql='''INSERT INTO heard VALUES (%s,%s,%s,%s) 
+            ON DUPLICATE KEY UPDATE heardNum=heardNum+1, heardDate=%s'''
             
             cursor.execute(sql,(id,a,count,datetime.now(),datetime.now()))
             MID = cursor.fetchall()
@@ -339,7 +344,8 @@ def PlayMusic(id):
             print("There is no music!")
 
 def ShowRecentlyListenMusic(id):
-    sql="SELECT music.Mname,music.singer,heard.heardDate from heard,music WHERE UID=%s and music.MID=heard.MID ORDER BY heardDate DESC LIMIT 3"
+    sql='''SELECT music.Mname,music.singer,heard.heardDate from heard,music
+     WHERE UID=%s and music.MID=heard.MID ORDER BY heardDate DESC LIMIT 3'''
     cursor.execute(sql,id)
     result=cursor.fetchall()
     headers=['Music name', 'Singer','Heard Date']
@@ -347,14 +353,16 @@ def ShowRecentlyListenMusic(id):
 
     connection.commit()
 
-# def ShowMostHeardMusic(id):
-#     sql='SELECT * FROM heard WHERE UID=%s'
-#     cursor.execute(sql,id)
-#     result = cursor.fetchall()
-#     print(result)
+def ShowMostHeardMusic(id):
+    sql='SELECT music.MID,music.Mname,music.singer,heard.heardNum FROM heard,music WHERE heardNum=(SELECT MAX(heardNum) FROM heard WHERE UID=%s) and music.MID=heard.MID and UID=%s'
+    cursor.execute(sql,(id,id))
+    result=cursor.fetchall()
+    headers=['Music ID','Music name', 'Singer','Heard number']
+    print(tabulate(result,headers,tablefmt='grid'))
 
-#     connection.commit()
-#     sql='SELECT * FROM result '
+
+    connection.commit()
+    sql='SELECT * FROM result'
     
 def SearchMusic(id):
     sql='SELECT MID,Mname,singer FROM music WHERE Mname=%s'
@@ -383,18 +391,19 @@ def LikeMusic(id):
     already_liked = cursor.fetchone()
 
     if already_liked:
-        print(f"You already liked the music: {music[0]}")
+        print("You already liked the music:",music[0])
         return
 
     sql='INSERT INTO favorite (UID,MID) VALUES (%s, %s)'
     cursor.execute(sql,(id,a))
     connection.commit()
-    print(f"Successfully liked the music: {music[0]}")
+    print("Successfully liked the music:",music[0])
     
     connection.commit()
 
 def ShowLikedMusic(id):
-    sql="SELECT music.Mname,music.singer from favorite,music WHERE UID=%s and music.MID=favorite.MID "
+    sql='''SELECT music.Mname,music.singer from favorite,music
+     WHERE UID=%s and music.MID=favorite.MID'''
     cursor.execute(sql,id)
     result=cursor.fetchall()
     headers=['Music name', 'Singer']
@@ -480,7 +489,7 @@ def Login():
                 cursor.execute(sql)
                 result=cursor.fetchall()
                 
-                headers=['admin ID', 'Music ID', 'Music name', 'Singer', 'Album ID']
+                headers=['admin ID', 'Music ID', 'Music name', 'Singer']
                 print(tabulate(result,headers,tablefmt='grid'))
                 connection.commit()
             elif x==3:
@@ -489,8 +498,8 @@ def Login():
                 Subscription(id)
             elif x==5:
                 ShowRecentlyListenMusic(id)
-            # elif x==6:
-            #     ShowMostHeardMusic(id)
+            elif x==6:
+                ShowMostHeardMusic(id)
             elif x==7:
                 SearchMusic(id)
             elif x==8:
