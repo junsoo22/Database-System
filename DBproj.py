@@ -64,6 +64,10 @@ def DeleteMusic():
     sql = 'DELETE FROM favorite WHERE MID=%s'
     cursor.execute(sql, a)
 
+    #search table에서 삭제
+    sql='DELETE FROM search WHERE MID=%s'
+    cursor.execute(sql,a)
+
     connection.commit()
 
 
@@ -360,9 +364,7 @@ def ShowMostHeardMusic(id):
     headers=['Music ID','Music name', 'Singer','Heard number']
     print(tabulate(result,headers,tablefmt='grid'))
 
-
     connection.commit()
-    sql='SELECT * FROM result'
     
 def SearchMusic(id):
     sql='SELECT MID,Mname,singer FROM music WHERE Mname=%s'
@@ -370,9 +372,11 @@ def SearchMusic(id):
     name=input('Input Music name: ')
     cursor.execute(sql,name)
     result=cursor.fetchall()
-
+    tmp=result[0][0]
     headers=['Music ID', 'Music name', 'Singer']
     print(tabulate(result,headers,tablefmt='grid'))
+    sql='INSERT INTO search VALUES (%s, %s)'
+    cursor.execute(sql,(id,tmp))
     connection.commit()
 
 #좋아요 표시를 한 음악 모아두는 table
